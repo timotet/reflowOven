@@ -1,0 +1,1 @@
+"./delay.obj" "./main.obj" "./nokia5110.obj" "./pid.obj" "./spi.obj" "../lnk_msp430g2553.cmd" -l"libc.a" 
