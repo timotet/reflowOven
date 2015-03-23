@@ -41,8 +41,8 @@ void drawFilledRectangle(unsigned char x1, unsigned char y1,
 			unsigned char x2, unsigned char y2);
 void drawLine(unsigned char x1, unsigned char y1, unsigned char x2,
 		unsigned char y2);
-unsigned int map(unsigned int x, unsigned int in_min, unsigned int in_max, unsigned int out_min, unsigned int out_max);
-//float map(float x, float in_min, float in_max, float out_min, float out_max);
+//unsigned int map(unsigned int x, unsigned int in_min, unsigned int in_max, unsigned int out_min, unsigned int out_max);
+float map(float x, float in_min, float in_max, float out_min, float out_max);
 void plotScreen(unsigned int x, unsigned int y);
 //void loadBuf(unsigned char x, unsigned char y);
 //void writeBuf(unsigned char **buf);

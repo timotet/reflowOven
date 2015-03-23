@@ -256,19 +256,19 @@ void drawFilledRectangle(unsigned char x1, unsigned char y1, unsigned char x2,
 	}
 }
 
-
+/*
 // mapping function taken from arduino
 unsigned int map(unsigned int x, unsigned int in_min, unsigned int in_max, unsigned int out_min, unsigned int out_max){
 
   return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
-/*
+*/
 // mapping function taken from arduino
 float map(float x, float in_min, float in_max, float out_min, float out_max){
 
   return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
-*/
+
 /*
 // for ploting the screen !!!!!Not enough RAM!!!!!
 void loadBuf(unsigned char x, unsigned char y) {

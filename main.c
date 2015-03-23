@@ -753,7 +753,7 @@ void reflowScreen() {
 	LcdGotoXY(65, 0);
 	itoa(drive, aCount);     // display PID output
 	LcdString(aCount);
-	LcdString("  ");
+	//LcdString("  ");
 
 	plotScreen(count, max_read);
 
@@ -819,30 +819,12 @@ void relayDrive(signed int drive) {
 
 	if(drive != lastDrive){
 
-	    duty = map(drive, 0, 4500, 6500, 0);
+	    duty = map(drive, 0, 6500, 6500, 0);   // 6500 = 0% duty cycle
 	    TA1CCR2 = duty;
 	}
 
 	lastDrive = drive;
 }
-
-/*
-void relayDrive(float drive) {
-
-	if (drive >= lastDrive) {   // compare the drive to the last drive
-
-		relayOn;
-		dLed1_Hi;
-
-	} else {
-
-		relayOff;
-		dLed1_Lo;
-	}
-
-	lastDrive = drive;
-}
-*/
 
 void loadProfile(const unsigned int *aTime, const unsigned int *aTemp) {
 
