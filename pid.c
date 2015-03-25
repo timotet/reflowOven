@@ -34,7 +34,7 @@ unsigned int UpdatePID(SPid * pid, unsigned int error, unsigned int position) {
 */
 signed int UpdatePID(SPid * pid, signed int error, signed int position) {
 	signed int pTerm, dTerm, iTerm;
-	pid->iMax = 3250;
+	pid->iMax = 3250;             // these correspond to the max and min of the PWM drive
 	pid->iMin = 0;
 
 	pTerm = pid->pGain * error;   // calculate the proportional term

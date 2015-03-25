@@ -7,7 +7,7 @@
  *
  * 2 talk to MAX6675 thermocouple to digital converter via spi 12 bit resolution
  *
- * 3 rough out a PID algorithm
+ * 3 rough out a PID algorithm (used PID from Tim Wescott's PID without a PhD)
  *
  * 4 set up button inputs and outputs for mosfet to fire SSD to control oven
  *
@@ -420,7 +420,7 @@ void startPwm(void) {
 	P3DIR |= dLed1;
 	// load compare register for ~5hz square wave
 	TA1CCR0 = 3251 - 1;                             // Period Register  ~5hz
-	TA1CCR2 = 0;
+	TA1CCR2 = 0;                                    // start with 0 duty cycle == SSR full on
 
 	//TA1CCR0 = 8001 - 1;                           // Period Register
 	//TA1CCR2 = 4000;                               // TA1.2 50% duty cycle  ~2hz
@@ -474,36 +474,6 @@ unsigned int maxRead(void) {
 	return result * .23;                // multiply by a small fudge factor
 }
 
-/*
-// base-10 itoa for positive numbers. Populates str with a null-terminated string.
-void itoa(unsigned int val, unsigned char *str) {
-
-	int temploc = 0;
-	int digit = 0;
-	int strloc = 0;
-	char tempstr[5]; // 16-bit number can be at most 5 ASCII digits;
-
-	// Get the number of digits
-	if (val >= 1000)
-		digit = 4;
-	else if (val >= 100)
-		digit = 3;
-	else if (val >= 10)
-		digit = 2;
-	else
-		digit = 1;
-
-	do {
-		digit = val % 10;
-		tempstr[temploc++] = digit + '0';
-		val /= 10;
-	} while (val > 0);
-	// reverse the digits back into the output string
-	while (temploc > 0)
-		str[strloc++] = tempstr[--temploc];
-	str[strloc] = 0;
-}
-*/
 // This itoa handles negative numbers
 int itoa(signed int val, unsigned char *str) {
 
@@ -560,7 +530,6 @@ void ftoa(float f, unsigned char *buf, unsigned int decPlaces) {
 
 	//return pos;
 }
-
 
 // fahrenheit conversion
 unsigned int itof(unsigned int i) { // convert celsius integer to fahrenheit
@@ -749,11 +718,11 @@ void reflowScreen() {
 	LcdGotoXY(65, 1);
 	itoa(duty, aCount);      // display duty cycle of PWM
 	LcdString(aCount);
-	LcdString("  ");
+	LcdString(" ");
 	LcdGotoXY(65, 0);
 	itoa(drive, aCount);     // display PID output
 	LcdString(aCount);
-	//LcdString("  ");
+	LcdString(" ");
 
 	plotScreen(count, max_read);
 
@@ -819,7 +788,13 @@ void relayDrive(signed int drive) {
 
 	if(drive != lastDrive){
 
-	    duty = map(drive, 0, 6500, 6500, 0);   // 6500 = 0% duty cycle
+	    duty = map(drive, 0, 5000, 3250, 0);   // 6500 = 0% duty cycle
+	    if(duty <= 0){                         // PWM needs to be constrained between
+	    	duty = 0;                          // these values or else it goes full on
+	    }
+	    else if (duty >= 3250){
+	    	duty = 3250;
+	    }
 	    TA1CCR2 = duty;
 	}
 
