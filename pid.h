@@ -10,7 +10,7 @@
 #ifndef PID_H_
 #define PID_H_
 
-
+/*
 typedef struct{
 	signed int dState;     // Last position input
 	signed int iState;     // Integrator state
@@ -21,8 +21,8 @@ typedef struct{
 } SPid;
 
 signed int UpdatePID(SPid * pid, signed int error, signed int position);
+*/
 
-/*
 typedef struct{
 	float dState;     // Last position input
 	float iState;     // Integrator state
@@ -33,6 +33,5 @@ typedef struct{
 } SPid;
 
 float UpdatePID(SPid * pid, float error, float position);
-*/
 
 #endif /* PID_H_ */

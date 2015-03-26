@@ -17,6 +17,12 @@
  *
  * 7 melt solder
  *
+ * Note: I am using floating point math in the PID algorithm. It seems the
+ * Igain is best set as a fraction, I tried to use integer math but could not
+ * get the desired results.
+ * The float gets truncated to an int when the drive value is passed to the
+ * relayDrive function.
+ *
  */
 
 #include <stdbool.h>
@@ -74,7 +80,7 @@ static const unsigned char modeLookUp[13] = { exit, 0, reflow, 0, pid, 0, RoHS,
 
 //// address's in memory ///////
 unsigned int * Flash_pGain = (unsigned int *) 0x1040; // info space C
-unsigned int * Flash_iGain = (unsigned int *) 0x1048;
+float * Flash_iGain =        (float *) 0x1044;
 unsigned int * Flash_dGain = (unsigned int *) 0x1050;
 
 unsigned char sampCnt = 0;        // counter for sampling the max 6675 @ 10Hz
@@ -106,8 +112,10 @@ extern bool fontFlag = false;  // This switches between 3x5 font and 5x7 font
 // PID stuff
 SPid PlantPID;
 unsigned int setPoint = 0;
-signed int lastDrive = 0;
-signed int drive = 0;
+//signed int lastDrive = 0;
+//signed int drive = 0;
+float lastDrive = 0;
+float drive = 0;
 static const unsigned int leadLook[5] = {125,235,235,0,0};             // goal temps for the 3 modes
 static const unsigned int leadTime[5] = {120,250,275,480};   // to compare to count
 static const unsigned int RohsLook[5] = {175,250,250,0,0};
@@ -130,7 +138,7 @@ void loadFlash();
 void initGPIO(void);                      // set up GPIO
 unsigned int maxRead(void);               // read max6675 thermocouple amplifier
 int itoa(signed int val, unsigned char *str); // int to ascii
-//void ftoa(float f, unsigned char *buf, unsigned int decPlaces); // float to ascii
+void ftoa(float f, unsigned char *buf, unsigned int decPlaces); // float to ascii
 //unsigned int itof(unsigned int i);      // convert 12 bit integer to farenheight
 void buzz(void);                          // for end of cycle alert
 void stopBuzz(void);                      // stop the buzzer
@@ -149,7 +157,7 @@ void Scroll(char curPos);               // scroll arrow on lcd for menu select
 void LEADScreen(void);                  // for lead
 void RoHSScreen(void);                  // for RoHS
 void exitScreen(void);                  // for bail out
-void relayDrive(signed int drive);           // for driving SSR
+void relayDrive(float drive);           // for driving SSR
 void loadProfile(const unsigned int *aTime, const unsigned int *aTemp);     // for loading profile variables
 void loadFlash(void);
 void writeFlash(void);
@@ -191,8 +199,8 @@ __interrupt void PORT1_ISR(void) {
 				PlantPID.pGain++;
 			}
 			else if (click == 3) {
-				PlantPID.iGain++;
-				//PlantPID.iGain += .001;
+				//PlantPID.iGain++;
+				PlantPID.iGain += .001;
 			}
 			else if (click == 4) {
 				PlantPID.dGain++;
@@ -235,8 +243,8 @@ __interrupt void PORT1_ISR(void) {
 				if (PlantPID.iGain <= 0) {
 					PlantPID.iGain = 0;
 				} else {
-					PlantPID.iGain--;
-					//PlantPID.iGain -= .001;
+					//PlantPID.iGain--;
+					PlantPID.iGain -= .001;
 					startCapture();                        // is button being held down?
 				}
 			} else if (click == 4) {
@@ -493,7 +501,6 @@ int itoa(signed int val, unsigned char *str) {
 	return i; /* strlen(s), i.e. the next free slot in array */
 }
 
-/*
 void ftoa(float f, unsigned char *buf, unsigned int decPlaces) {
 
 	unsigned int pos = 0, i, dp, num;
@@ -531,6 +538,7 @@ void ftoa(float f, unsigned char *buf, unsigned int decPlaces) {
 	//return pos;
 }
 
+/*
 // fahrenheit conversion
 unsigned int itof(unsigned int i) { // convert celsius integer to fahrenheit
 
@@ -577,8 +585,8 @@ void pidScreen(void) {
 	itoa(PlantPID.pGain, aCount);
 	LcdString(aCount);
 	LcdGotoXY(38, 3);
-	//ftoa(PlantPID.iGain, aCount, 4);
-	itoa(PlantPID.iGain, aCount);
+	ftoa(PlantPID.iGain, aCount, 4);
+	//itoa(PlantPID.iGain, aCount);
 	LcdString(aCount);
 	LcdGotoXY(38, 4);
 	itoa(PlantPID.dGain, aCount);
@@ -719,10 +727,11 @@ void reflowScreen() {
 	itoa(duty, aCount);      // display duty cycle of PWM
 	LcdString(aCount);
 	LcdString(" ");
-	LcdGotoXY(65, 0);
+	LcdGotoXY(65,0);
 	itoa(drive, aCount);     // display PID output
+	//ftoa(drive, aCount, 3);
 	LcdString(aCount);
-	LcdString(" ");
+	LcdString("  ");
 
 	plotScreen(count, max_read);
 
@@ -780,7 +789,7 @@ void Scroll(char curPos) {
 	}
 }
 
-void relayDrive(signed int drive) {
+void relayDrive(float drive) {
 
 	if (drive <= 0){
 		drive = 0;
@@ -788,7 +797,7 @@ void relayDrive(signed int drive) {
 
 	if(drive != lastDrive){
 
-	    duty = map(drive, 0, 5000, 3250, 0);   // 6500 = 0% duty cycle
+	    duty = map(drive, 0, 3250, 0, 3250);   // 3250 = 0% duty cycle
 	    if(duty <= 0){                         // PWM needs to be constrained between
 	    	duty = 0;                          // these values or else it goes full on
 	    }
@@ -873,9 +882,9 @@ int main(void) {
 
     loadFlash();                // load PID values from before power down
 
-	//PlantPID.pGain = 50;      // start values
-	//PlantPID.iGain = 1;
-	//PlantPID.dGain = 10;
+	//PlantPID.pGain = 10;      // start values
+	//PlantPID.iGain = .001;
+	//0PlantPID.dGain = 50;
 
     max_read = maxRead();         // take a temp reading
 	//WDTCTL = WDT_ADLY_1000;     // start watch dog timer for 1000ms/1 sec interrupt
@@ -911,7 +920,8 @@ int main(void) {
 
 			else if (click == 3) {
 				LcdGotoXY(38, 3);
-				itoa(PlantPID.iGain, aCount);
+				//itoa(PlantPID.iGain, aCount);
+				ftoa(PlantPID.iGain, aCount, 4);
 				LcdString(aCount);
 				LcdString("   ");
 			}
