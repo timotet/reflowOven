@@ -4,7 +4,7 @@
 
 SHELL = cmd.exe
 
-CG_TOOL_ROOT := C:/ti/ccsv6/tools/compiler/ti-cgt-msp430_4.4.3
+CG_TOOL_ROOT := C:/ti/ccsv6/tools/compiler/ti-cgt-msp430_4.4.6
 
 GEN_OPTS__FLAG := 
 GEN_CMDS__FLAG := 
@@ -140,13 +140,13 @@ all: reflowOven.out
 reflowOven.out: $(OBJS) $(CMD_SRCS) $(GEN_CMDS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: MSP430 Linker'
-	"C:/ti/ccsv6/tools/compiler/ti-cgt-msp430_4.4.3/bin/cl430" -vmsp --abi=eabi --use_hw_mpy=none --advice:power=all -g --define=__MSP430G2553__ --display_error_number --diag_wrap=off --diag_warning=225 --printf_support=minimal -z -m"reflowOven.map" --stack_size=80 --heap_size=80 -i"C:/ti/ccsv6/ccs_base/msp430/include" -i"C:/ti/ccsv6/tools/compiler/ti-cgt-msp430_4.4.3/lib" -i"C:/ti/ccsv6/tools/compiler/ti-cgt-msp430_4.4.3/include" --reread_libs --diag_wrap=off --verbose_diagnostics --warn_sections --display_error_number --xml_link_info="reflowOven_linkInfo.xml" --rom_model -o "reflowOven.out" $(ORDERED_OBJS)
+	"C:/ti/ccsv6/tools/compiler/ti-cgt-msp430_4.4.6/bin/cl430" -vmsp --abi=eabi --use_hw_mpy=none --advice:power="all" -g --define=__MSP430G2553__ --display_error_number --diag_wrap=off --diag_warning=225 --printf_support=minimal -z -m"reflowOven.map" --stack_size=80 --heap_size=80 -i"C:/ti/ccsv6/ccs_base/msp430/include" -i"C:/ti/ccsv6/tools/compiler/ti-cgt-msp430_4.4.6/lib" -i"C:/ti/ccsv6/tools/compiler/ti-cgt-msp430_4.4.6/include" --reread_libs --diag_wrap=off --verbose_diagnostics --warn_sections --display_error_number --xml_link_info="reflowOven_linkInfo.xml" --use_hw_mpy=none --rom_model -o "reflowOven.out" $(ORDERED_OBJS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
 reflowOven.hex: $(EXE_OUTPUTS)
 	@echo 'Invoking: MSP430 Hex Utility'
-	"C:/ti/ccsv6/tools/compiler/ti-cgt-msp430_4.4.3/bin/hex430" --memwidth=8 --romwidth=8 -o "reflowOven.hex" $(EXE_OUTPUTS__QUOTED)
+	"C:/ti/ccsv6/tools/compiler/ti-cgt-msp430_4.4.6/bin/hex430" --memwidth=8 --romwidth=8 -o "reflowOven.hex" $(EXE_OUTPUTS__QUOTED)
 	@echo 'Finished building: $@'
 	@echo ' '
 
