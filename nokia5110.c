@@ -30,8 +30,8 @@ void LcdBmp(const unsigned char my_array[])
 {
   unsigned short index = 0;
   //LcdWrite(CMD , 0x22);     // vertical addressing
-  for (index = 0; index < 504; index++)
-  {
+  for (index = 0; index < 504; index++) {
+
    LcdWrite(DATA,my_array[index]);
   }
   //LcdWrite(CMD , 0x20);     // horizontal addressing
@@ -111,12 +111,12 @@ void LcdInit(void)
 
 void LcdWrite(char cmd, char data) {
 
-   P2OUT &= ~PIN_SCE;        // SCE pin low
+   P2OUT &= ~PIN_SCE;                                     // SCE pin low
    (cmd == CMD) ? (P3OUT &= ~PIN_DC) : (P3OUT |= PIN_DC); // check to see if we are writing a CMD or DATA
-   UCB0TXBUF = data;         // load shift register with data to send
+   UCB0TXBUF = data;                                      // load shift register with data to send
    while (!(IFG2 & UCB0TXIFG));
-   delay(1);                 // Having this here is lame!!!!
-   P2OUT |= PIN_SCE;         // SCE pin high
+   delay(1);                                              // Having this here is lame!!!!
+   P2OUT |= PIN_SCE;                                      // SCE pin high
 }
 
 /*
@@ -144,8 +144,9 @@ void printV(unsigned char x, unsigned char y, unsigned char length,
  * Argument(s)  : x,y - position, x = 0-83, y = 0-6
  */
 void setPixel(unsigned char x, unsigned char y) {
-	unsigned char value = 0;
+
 	unsigned char row = 0;
+	unsigned char value = 0;
 
 	//if (x < 0 || x >= LCDCOLMAX || y < 0 || y >= LCDPIXELROWMAX)
 		//return;
@@ -273,8 +274,7 @@ float map(float x, float in_min, float in_max, float out_min, float out_max){
 // for ploting the screen !!!!!Not enough RAM!!!!!
 void loadBuf(unsigned char x, unsigned char y) {
 
-	unsigned char value = 0;
-	unsigned char row = 0;
+	unsigned char value, row = 0;
 
 	row = y / 8;
 
@@ -303,8 +303,7 @@ void writeBuf(unsigned char **buf){
 //for real time plot x = time, y = degrees
 void plotScreen(unsigned int x, unsigned int y) {
 
-	unsigned int secCount = 0;
-	unsigned int degrees = 0;
+	unsigned int secCount, degrees = 0;
 
 	secCount = map(x,0,500,0,LCD_X);        // hard coded time range 0-504, map to nokia x
 	degrees = map(y,0,300,0,LCD_Y - 8);     // temp range 0 - 280'C , map to nokia y - 1 row

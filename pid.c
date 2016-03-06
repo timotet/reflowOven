@@ -12,7 +12,7 @@
 float UpdatePID(SPid * pid, float error, float position) {
 
 	float pTerm, dTerm, iTerm;
-	pid->iMax = 3250;             // these correspond to the max and min of the PWM drive
+	pid->iMax = 4000;             // these correspond to the max and min of the PWM drive
 	pid->iMin = 0;
 
 	pTerm = pid->pGain * error;     // calculate the proportional term
