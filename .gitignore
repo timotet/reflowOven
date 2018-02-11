@@ -1,3 +1,8 @@
 /Debug/
 
 *.obj
+Debug/reflowOven.map
+*.obj
+Debug/main.obj
+*.xml
+Debug/spi.obj
