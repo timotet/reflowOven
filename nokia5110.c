@@ -16,9 +16,9 @@ extern bool fontFlag;
 enum pixMode { off, on, xor};
 enum pixMode pMode = off;
 
-unsigned char pixMode = 0;
+//unsigned char pixMode = 0;
 
-//static unsigned char lcdBuf[LCDROWMAX][LCDCOLMAX] = { { 0 }, { 0 } };  // need more ram!!!!
+//static char lcdBuf[LCDROWMAX][LCDCOLMAX];  // need more ram!!!!
 
 void LcdGotoXY(unsigned char x, unsigned char y)
 {
@@ -71,9 +71,9 @@ void LcdClear(void) {
   LcdWrite(CMD, 0x80);
   LcdWrite(CMD, 0x40);
 
-  for (i=0;i<6;i++)      // number of rows
-  for (j=0;j<LCD_X;j++)  // number of columns
-  LcdWrite(DATA, 0x00);
+	for (i = 0; i < 6; i++)      // number of rows
+		for (j = 0; j < LCD_X; j++)  // number of columns
+			LcdWrite(DATA, 0x00);
 }
 
 /*
@@ -103,7 +103,7 @@ void LcdInit(void)
   LcdWrite(CMD , 0x9F);     // Set LCD Vop (Contrast). //0xE0 - BF  may have to play with
   LcdWrite(CMD , 0x07);     // Set Temp coefficent. //0x04 =t0 //0x05=t1 // 0x06=t2 // 0x07=t3
   LcdWrite(CMD , 0x13);     // LCD bias mode 1:100 0x10 //1:48 0x13
-  LcdWrite(CMD , 0x20);     // LCD basic instruction set
+  LcdWrite(CMD , 0x20);     // LCD verticle addressing
   LcdWrite(CMD , 0x08);     // lcd blank
   LcdWrite(CMD , 0x0C);     // LCD  0x0C for black on white //0x0d for inverse
   LcdClear();
@@ -264,41 +264,36 @@ unsigned int map(unsigned int x, unsigned int in_min, unsigned int in_max, unsig
   return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 */
+
 // mapping function taken from arduino
-float map(float x, float in_min, float in_max, float out_min, float out_max){
+float map(float x, float in_min, float in_max, float out_min, float out_max) {
 
   return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
-/*
-// for ploting the screen !!!!!Not enough RAM!!!!!
-void loadBuf(unsigned char x, unsigned char y) {
 
-	unsigned char value, row = 0;
+//// for plotting the screen !!!!!Not enough RAM!!!!!
+//void loadBuf(unsigned char x, unsigned char y) {
+//
+//	unsigned char value, row = 0;
+//	row = y / 8;
+//	value = lcdBuf[row][x];
+//	value |= (1 << (y % 8));
+//	lcdBuf[row][x] = value;
+//}
+//
+//// for writing the screen buffer to the screen
+//void writeBuf(char *buf){
+//
+//	unsigned int i, j;
+//	for (i = 0; i <= LCDROWMAX; i++){
+//		for (j = 0; j <= LCDCOLMAX; j++){
+//			LcdWrite(DATA, buf[i][j]);
+//		}
+//	}
+//
+//}
 
-	row = y / 8;
-
-	value = lcdBuf[row][x];
-
-	value |= (1 << (y % 8));
-
-	lcdBuf[row][x] = value;
-}
-
-// for writing the screen buffer to the screen
-void writeBuf(unsigned char **buf){
-
-	unsigned int i, j;
-
-	for (i = 0; i <= LCDROWMAX-1; i++){
-		for (j = 0; j <= LCDCOLMAX; j++){
-
-			LcdWrite(DATA, buf[i][j]);
-		}
-	}
-
-}
-*/
 
 //for real time plot x = time, y = degrees
 void plotScreen(unsigned int x, unsigned int y) {
@@ -310,10 +305,10 @@ void plotScreen(unsigned int x, unsigned int y) {
 
 	degrees = (LCD_Y - 8) - degrees;        // flip the screen
 
-	//pMode = xor;                           // doesnt work without a buffer
+	pMode = on;                           // doesnt work without a buffer
 	setPixel(secCount,degrees);
-	//pMode = on;
-	//loadBuf(secCount,degrees);
-	//writeBuf(lcdBuf);
+	pMode = off;
+//	loadBuf(secCount,degrees);
+//	writeBuf(lcdBuf);
 }
 

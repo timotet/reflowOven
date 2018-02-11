@@ -45,6 +45,6 @@ void drawLine(unsigned char x1, unsigned char y1, unsigned char x2,
 float map(float x, float in_min, float in_max, float out_min, float out_max);
 void plotScreen(unsigned int x, unsigned int y);
 //void loadBuf(unsigned char x, unsigned char y);
-//void writeBuf(unsigned char **buf);
+//void writeBuf(char *buf);
 
 #endif /* NOKIA5110_H_ */
