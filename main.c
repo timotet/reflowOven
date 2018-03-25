@@ -3,7 +3,7 @@
  * 4/5/14
  * program for a DIY solder re-flow oven
  *
- * 1 talk to nokia 5011 LCD with  8 bit spi and clean up library
+ * 1 talk to nokia 5011 LCD with 8 bit spi and clean up library
  *
  * 2 talk to MAX6675 thermocouple to digital converter via spi 12 bit resolution
  *
@@ -16,6 +16,12 @@
  * 6 write a solder profile
  *
  * 7 melt solder
+ *
+ * 8 Feb 10 2018 Reworked for new hardware works great now, better than ever!!
+ *   cleaned up code
+ *   PWM set at 10.3 Hz was at 2Hz
+ *   Reworked relayDrive function
+ *   changed pid adjustment for Igain from .001 to .01
  *
  * Note: I am using floating point math in the PID algorithm. It seems the
  * Igain is best set as a fraction, I tried to use integer math but could not
