@@ -1,8 +1,10 @@
-/Debug/
 
 *.obj
-Debug/reflowOven.map
-*.obj
-Debug/main.obj
 *.xml
-Debug/spi.obj
+Debug/*
+targetConfigs/*
+.launches/*
+.cssproject
+.cproject
+.project
+.settings/*
