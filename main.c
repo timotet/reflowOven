@@ -23,6 +23,17 @@
  *   Reworked relayDrive function
  *   changed pid adjustment for Igain from .001 to .01
  *
+ *   1/31/22
+ *   Reworked again for new oven the last one went down in a burst of white sparks!
+ *   cleaned up the code a bit more.
+ *   Changed the values of Imin, Imax in the pid.c file, to represent the min and max values of timerA 0 - 65535.
+ *   Also increased the PWM to ~60Hz
+ *   Slowed the MAX6675 sample rate to 3Hz I don't know if it made much difference.
+ *   Now the controller is mapped to min and max values of timerA
+ *   So a value of 0 means the SSR is off
+ *   and a value of 65535-1 is full on.
+ *   I think I'm actually using the PID controller correctly now... maybe
+ *
  * Note: I am using floating point math in the PID algorithm. It seems the
  * Igain is best set as a fraction, I tried to use integer math but could not
  * get the desired results.
@@ -49,7 +60,8 @@
 //#define pwm_2  BIT4   // port2 pin4    pwm out
 #define pwmOn  1
 #define pwmOff 0
-
+#define maxDrive 65535  // max for the plant output
+#define maxDuty  65535
 #define maxOn       1
 #define maxOff      0
 #define max_CS      BIT3    // max chip select
@@ -104,6 +116,8 @@ static unsigned char tempInC[5];  // for temp after itoa
 //char tempString[3];
 unsigned int count = 0;                              // for counting seconds during reflow cycle
 static unsigned char aCount[5] = {0, 0, 0, 0, 0};    // for converting digits in itoa function
+static unsigned char aDuty[5] = {0, 0, 0, 0, 0};
+static unsigned char aDrive[5] = {0, 0, 0, 0, 0};
 unsigned int max_read = 0;
 unsigned char maxStat = 0;
 unsigned char sPos = 0;            // y position to scroll from
@@ -131,7 +145,7 @@ static const unsigned int RohsTime[5] = {180,310,335,480};
 unsigned int profileLook[5] = {0,0,0,0,0};                           // for loading in the reflow parameters
 unsigned int time[4] = {0,0,0,0};
 bool pidFlag = false;
-signed int duty = 0;
+unsigned int duty = 0;
 
 // the reflow modes
 enum PIDmode {
@@ -145,7 +159,7 @@ enum PIDmode pidMode = done;
 void loadFlash();
 void initGPIO(void);                      // set up GPIO
 unsigned int maxRead(void);               // read max6675 thermocouple amplifier
-int itoa(signed int val, unsigned char *str); // int to ascii
+int itoa(signed long val, unsigned char *str); // int to ascii
 //void ftoa(float f, unsigned char *buf, unsigned int decPlaces); // float to ascii
 //unsigned int itof(unsigned int i);      // convert 12 bit integer to farenheight
 void buzz(void);                          // for end of cycle alert
@@ -204,14 +218,14 @@ __interrupt void PORT1_ISR(void) {
 
 		if (mode == scroll && pidFlag) { // pid menu
 			if (click == 2) {
-				PlantPID.pGain++;
+				PlantPID.pGain = PlantPID.pGain + 10;
 			}
 			else if (click == 3) {
 				//PlantPID.iGain++;
 				PlantPID.iGain += .01;
 			}
 			else if (click == 4) {
-				PlantPID.dGain++;
+				PlantPID.dGain = PlantPID.dGain + 10;
 			}
 		}
 
@@ -244,7 +258,7 @@ __interrupt void PORT1_ISR(void) {
 				if (PlantPID.pGain <= 0) {
 					PlantPID.pGain = 0;
 				} else {
-					PlantPID.pGain--;
+					PlantPID.pGain = PlantPID.pGain - 10;
 					startCapture();                        // is button being held down?
 				}
 			} else if (click == 3) {
@@ -259,7 +273,7 @@ __interrupt void PORT1_ISR(void) {
 				if (PlantPID.dGain <= 0) {
 					PlantPID.dGain = 0;
 				} else {
-					PlantPID.dGain--;
+					PlantPID.dGain = PlantPID.dGain - 10;
 					startCapture();                        // is button being held down?
 				}
 	        }
@@ -279,7 +293,7 @@ __interrupt void PORT1_ISR(void) {
 #pragma vector = TIMER0_A0_VECTOR
 __interrupt void TIMER0_A0_ISR(void) {
 
-	// set up for 2.75Hz interrupt
+	// set up for 5.5Hz interrupt
 	//sampCnt++;
 	sampleFlag = true;
 	//dLed1_toggle;
@@ -402,14 +416,10 @@ void stopBuzz(void) {
 void startSampler(void){
 
 	P1DIR &= ~buzzer; // p1.2 Output TA0.1  turn this off so we dont hear a click
-	P1SEL &= ~buzzer;                   // GPIO select
+	P1SEL &= ~buzzer;                         // GPIO select
 	TA0CTL |= TASSEL_1 + MC_1 + ID_0;   // ACLK, upmode, divide by 1
-	TA0CCR0 = 5957 - 1;                 // start timerA for 2.75Hz interrupt
-	//TA0CCR0 = 6553 - 1;               // start timerA for 2.5Hz interrupt
-	//TA0CCR0 = 5462 - 1;               // start timerA for 3Hz interrupt
-	//TA0CCR0 = 4097 - 1;               // start timerA for 4Hz interrupt
-	//TA0CCR0 = 3251 - 1;               // start timerA for 5Hz interrupt
-	//TA0CCR0 = 8001 - 1;               // start timerA for 2Hz interrupt
+	//TA0CCR0 = 5957 - 1;                 // start timerA for 5.5Hz interrupt
+	TA0CCR0 = 10923 - 1;                       // 3Hz
 	TA0CCTL0 |= CCIE;                   // compare interrupt enabled
 }
 
@@ -426,14 +436,17 @@ void startPwm(void) {
 	// Configure Port Pins
 	P2SEL |= pwm_1;                                 // TA1.2 Option select
 	P2DIR |= pwm_1;                                 // p2.4 Output
-	P3SEL |= dLed1;                                 // for visual feed back
+	P3SEL |= dLed1;                                  // for visual feed back
 	P3DIR |= dLed1;
 
-	TA1CCR0 =  24001 - 1;                            // Period Register  ~82hz 3001 60hz = 4101 10.3hz = 24001
-	TA1CCR2 = 0;                                    // start with 0 duty cycle == SSR full on
+	TA1CCR0 =  65535;                                 // max amount for 16 bit counter ~60Hz
+	TA1CCR2 = 0;                                         // start with 0 duty cycle == SSR full on
 
-	TA1CTL = TASSEL_2 + MC_3 + ID_3;                // SMCLK, up down mode, divide by 8
-	TA1CCTL2 |= OUTMOD_6;                           // TA1.2 CCR1, Reset/Set compare
+	//TA1CTL = TASSEL_2 + MC_3 + ID_3;                // SMCLK, up down mode, divide by 8
+	TA1CTL = TASSEL_2 + MC_1;                         // SMCLK, up  mode
+	//TA1CCTL2 |= OUTMOD_6;                           // TA1.2 CCR1, Toggle/Set
+	//TA1CCTL2 |= OUTMOD_3;                           // TA1.2 CCR1, Set/Reset
+	TA1CCTL2 |= OUTMOD_7;                           // TA1.2 CCR1, Reset/Set
 	pwmFlag = true;
 }
 
@@ -453,7 +466,7 @@ void stopPwm(void) {
 
 unsigned int maxRead(void) {
 
-	// read the max 6675 @ ~2.75Hz
+	// read the max 6675 @ ~5.5Hz
 	maxStat = maxOn;
 	cnt = 0;
 
@@ -461,11 +474,11 @@ unsigned int maxRead(void) {
 
 	UCB0TXBUF = 0x00;                // load shift register with dummy bite to send 2 times
 	while (!(IFG2 & UCB0TXIFG));     // so we can read the RX buffer in the RX interrupt
-	delay(1); //WTF??
+	delay(1);
 
 	UCB0TXBUF = 0x00;
 	while (!(IFG2 & UCB0TXIFG));
-	delay(1); //Why?
+	delay(1);
 
 	max_CS_Hi;                           // max_CS pin high
 
@@ -474,11 +487,11 @@ unsigned int maxRead(void) {
 
 	maxStat = maxOff;
 
-	return result * .23;                // multiply by a small fudge factor
+	return result * .245;                // multiply by a small fudge factor
 }
 
 // This itoa handles negative numbers
-int itoa(signed int val, unsigned char *str) {
+int itoa(signed long val, unsigned char *str) {
 
 	int i = 0;
 
@@ -722,15 +735,15 @@ void reflowScreen() {
 	//ftoa(PlantPID.iState, aCount, 3);      // display Integrator output
 	//LcdString(aCount);
 	//LcdString("  ");
-	LcdGotoXY(55, 0);
-	//itoa(drive, aCount);     // display PID output
-	ftoa(drive, aCount, 1);
-	LcdString(aCount);
-	LcdString("   ");
-	LcdGotoXY(65, 1);
-	itoa(duty, aCount);      // display duty cycle of PWM
-	LcdString(aCount);
-	LcdString("  ");
+	LcdGotoXY(50, 0);
+	itoa(drive, aDrive);     // display PID output
+	//ftoa(drive, aCount, 1);
+	LcdString(aDrive);
+	LcdString("     ");
+	LcdGotoXY(53, 1);
+	itoa(duty, aDuty);      // display duty cycle of PWM
+	LcdString(aDuty);
+	LcdString("     ");
 
 	plotScreen(count, max_read);
 
@@ -789,25 +802,36 @@ void Scroll(char curPos) {
 	}
 }
 
+// ~60hz PWM
+// If TA1CCR0 and TA1CCR2 are == then the duty cycle is 0
+// If TA1CCR2 is 0 then duty cycle is 100% or full on
+// when Drive is at zero we have reached the set point
+// then the drive goes negative and shit gets messy so turn the timer off!
 void relayDrive(float Drive) {
 
-	if (Drive != lastDrive) {
-                                         // ~10hz PWM
-		if (Drive < 0 || Drive > 4500)   // PWM duty cycle needs to be constrained between
-			Drive = 0;                   // these values (the PWM period)
-			                             // or else it goes full on when the Drive goes negative
-		                                 // in other words TimerA pukes... kinda!
-			                             // If TA1CCR0 and TA1CCR2 are == then duty cycle is 0
-		                                 // If TA1CCR2 is 0 then duty cycle is 100% or full on
+	signed long tDrive = Drive;
 
-		// when Drive is at zero we have reached the set point
-		// we need to map to the inverse of the Drive output
+	if (tDrive != lastDrive) {
+
 		// in min in max out min out max
-		duty = map(Drive, 0, 4500, 24000, 0);       //  24001 = 0% duty cycle
-		TA1CCR2 = duty;
+		duty = map(tDrive, 0, maxDrive, 0, maxDuty); //  65535 = 0% duty cycle
+
+		if (max_read >= setPoint) {
+
+			TA1CCR2 = 0;    // drive just went negative turn pwm off
+
+		} else if (tDrive < 0 && max_read < setPoint) {
+
+			TA1CCR2 = maxDuty;  // drive went negative turn on full blast
+
+		} else {
+
+			TA1CCR2 = duty;
+		}
 	}
 
-	lastDrive = Drive;
+	lastDrive = tDrive;
+	Drive = tDrive;
 }
 
 void loadProfile(const unsigned int *aTime, const unsigned int *aTemp) {
@@ -857,13 +881,13 @@ int main(void) {
 
 	WDTCTL = WDTPW + WDTHOLD;     // Stop WDT
 
-	BCSCTL1 = CALBC1_16MHZ;       // calibrate basic clock system control 1 to 16mhz
-	DCOCTL = CALDCO_16MHZ;        // calibrate DCO to 16mhz
+	BCSCTL1 = CALBC1_16MHZ;          // calibrate basic clock system control 1 to 16mhz
+	DCOCTL = CALDCO_16MHZ;          // calibrate DCO to 16mhz
 
-	BCSCTL2 |= DIVS_2;            // SMCLK = 16/4 = 4Mhz for SPI
+	BCSCTL2 |= DIVS_2;                    // SMCLK = 16/4 = 4Mhz for SPI
 	BCSCTL3 |= LFXT1S_0 | XCAP_3; // Use 32 khz crystal as ACLK + 12.5 pF caps
 
-	IE1 |= WDTIE;                 //enable watchdog timer interrupt
+	IE1 |= WDTIE;                             //enable watchdog timer interrupt
 
 	//// Flash timing ////
 	FCTL2 = FWKEY + FSSEL_1 + FN5 + FN3;    // MCLK = 16Mhz/32+8 = 400khz // has to be between 257-476 khz these both work
@@ -880,9 +904,9 @@ int main(void) {
 
     loadFlash();                // load PID values from before power down
 
-//	PlantPID.pGain = 20;      // start values
-//	PlantPID.iGain = .02;
-//	PlantPID.dGain = 100;
+//	PlantPID.pGain = 3500;      // start values
+//	PlantPID.iGain = .5;
+//	PlantPID.dGain = 500;
 
     max_read = maxRead();         // take a temp reading
 
@@ -895,7 +919,7 @@ int main(void) {
 	for (;;) {     // infinite loop
 
 
-		//if (sampCnt != 0) {            // read the max 6675 @ 2.75hz
+		//if (sampCnt != 0) {            // read the max 6675 @ 5.5hz  32768/5.5 = 5957
 		//if (sampleFlag) {
 		while (sampleFlag) {
 

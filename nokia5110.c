@@ -29,12 +29,10 @@ void LcdGotoXY(unsigned char x, unsigned char y)
 void LcdBmp(const unsigned char my_array[])
 {
   unsigned short index = 0;
-  //LcdWrite(CMD , 0x22);     // vertical addressing
   for (index = 0; index < 504; index++) {
 
    LcdWrite(DATA,my_array[index]);
   }
-  //LcdWrite(CMD , 0x20);     // horizontal addressing
 }
 
 void LcdCharacter(unsigned char character) {
@@ -101,9 +99,9 @@ void LcdInit(void)
   P2OUT |= PIN_SCE;         // SCE pin high
   LcdWrite(CMD , 0x21);     // LCD Extended instruction set
   LcdWrite(CMD , 0x9F);     // Set LCD Vop (Contrast). //0xE0 - BF  may have to play with
-  LcdWrite(CMD , 0x07);     // Set Temp coefficent. //0x04 =t0 //0x05=t1 // 0x06=t2 // 0x07=t3
+  LcdWrite(CMD , 0x07);     // Set Temp coefficient. //0x04 =t0 //0x05=t1 // 0x06=t2 // 0x07=t3
   LcdWrite(CMD , 0x13);     // LCD bias mode 1:100 0x10 //1:48 0x13
-  LcdWrite(CMD , 0x20);     // LCD verticle addressing
+  LcdWrite(CMD , 0x20);     // LCD vertical addressing
   LcdWrite(CMD , 0x08);     // lcd blank
   LcdWrite(CMD , 0x0C);     // LCD  0x0C for black on white //0x0d for inverse
   LcdClear();
@@ -115,7 +113,7 @@ void LcdWrite(char cmd, char data) {
    (cmd == CMD) ? (P3OUT &= ~PIN_DC) : (P3OUT |= PIN_DC); // check to see if we are writing a CMD or DATA
    UCB0TXBUF = data;                                      // load shift register with data to send
    while (!(IFG2 & UCB0TXIFG));
-   delay(1);                                              // Having this here is lame!!!!
+   delay(1);
    P2OUT |= PIN_SCE;                                      // SCE pin high
 }
 
@@ -147,9 +145,6 @@ void setPixel(unsigned char x, unsigned char y) {
 
 	unsigned char row = 0;
 	unsigned char value = 0;
-
-	//if (x < 0 || x >= LCDCOLMAX || y < 0 || y >= LCDPIXELROWMAX)
-		//return;
 
 	row = y / 8;
 
@@ -271,7 +266,7 @@ float map(float x, float in_min, float in_max, float out_min, float out_max) {
   return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
-
+//
 //// for plotting the screen !!!!!Not enough RAM!!!!!
 //void loadBuf(unsigned char x, unsigned char y) {
 //
